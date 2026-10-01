@@ -1,27 +1,38 @@
-# Fireworks
+# Fireworks / Jobzapp
 
-Jobzapp marketplace — a production-minded two-sided service marketplace.
+Jobzapp is a production-minded, bilingual two-sided service marketplace: customers post work, professionals respond with offers, and both sides can communicate, schedule, and complete payments securely.
 
-## Visual direction
+## Current foundation
 
-The first build establishes the Jobzapp design system:
+- Next.js 16 + React 19 + TypeScript
+- Responsive mobile-first marketplace landing experience
+- English / Spanish language switch
+- Accessible navigation and responsive mobile menu
+- Clear customer and professional entry points
+- GitHub Actions type-check + production build gate
 
-- Editorial typography and high-contrast hierarchy
-- Warm off-white canvas with deep evergreen surfaces
-- Lime action accent for clear calls to action
-- Responsive customer + professional marketplace layouts
-- Offer comparison, verified professionals, protected payments, and bilingual positioning
-- Mobile-first responsive behavior without sacrificing the desktop experience
+## Product layers planned
 
-## Stack
+1. Authentication and profiles
+2. Customer job posting and professional offers
+3. Search, service categories, location and availability
+4. In-app messaging and notifications
+5. Verification, reviews, moderation and reporting
+6. Protected payments and payouts
+7. Admin operations and marketplace analytics
 
-Next.js 16 + React 19 + TypeScript.
-
-Supabase, secure marketplace workflows, payments, realtime messaging, verification, moderation, and production infrastructure will be added in subsequent layers.
+No secrets, payment credentials, or external service keys belong in source control.
 
 ## Development
 
 ```bash
 npm install
 npm run dev
+```
+
+Production checks:
+
+```bash
+npm run lint
+npm run build
 ```

@@ -2,7 +2,7 @@ name: Quality
 
 on:
   push:
-    branches: [main]
+    branches: [main, fireworks-foundation]
   pull_request:
 
 jobs:
@@ -15,4 +15,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
+      - run: npm run lint
       - run: npm run build
