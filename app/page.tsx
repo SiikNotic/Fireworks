@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
+import type { Database } from "../lib/database.types";
 
 type Lang = "en" | "es";
 type Mode = "customer" | "pro";
@@ -46,12 +48,34 @@ export default function Home() {
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{ id: string; email?: string } | null>(null);
+  const [realJobs, setRealJobs] = useState<Database["public"]["Tables"]["jobs"]["Row"][]>([]);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authMessage, setAuthMessage] = useState("");
   const t = copy[lang];
 
-  const filtered = useMemo(() => jobs.filter(j => {
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setSessionUser(data.session?.user ? { id: data.session.user.id, email: data.session.user.email } : null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setSessionUser(session?.user ? { id: session.user.id, email: session.user.email } : null));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from("jobs").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => { if (data) setRealJobs(data); });
+  }, [sessionUser]);
+
+  const displayJobs = realJobs.length ? realJobs.map(j => ({ title:j.title, es:j.title, price:j.budget_min != null && j.budget_max != null ? `${j.budget_min}–${j.budget_max}` : j.budget_max != null ? `${j.budget_max}` : "Open", distance:"nearby", time:j.scheduled_for ? new Date(j.scheduled_for).toLocaleDateString() : "Flexible", icon:"✦", color:"blue" })) : jobs;
+  const filtered = useMemo(() => displayJobs.filter(j => {
     const text = lang === "en" ? j.title : j.es;
     return !query || text.toLowerCase().includes(query.toLowerCase());
-  }), [query, lang]);
+  }), [query, lang, displayJobs]);
 
   return (
     <main className="app-shell">
@@ -80,14 +104,14 @@ export default function Home() {
           <div className="header-actions">
             <button className="language" onClick={() => setLang(lang === "en" ? "es" : "en")}>{t.language}</button>
             <button className="bell">♢<i>2</i></button>
-            <button className="avatar">SN</button>
+            <button className="avatar" onClick={() => setAuthOpen(true)}>{sessionUser ? "✓" : "SN"}</button>
           </div>
         </header>
 
         <div className="main-scroll">
           <section className="welcome">
             <div><span>{t.hello}</span><h1>{mode === "customer" ? t.title : (lang === "en" ? "What work fits your day?" : "¿Qué trabajo encaja hoy?")}</h1></div>
-            <button className="quick-post" onClick={() => setModal(true)}><b>＋</b>{t.request}</button>
+            <button className="quick-post" onClick={() => sessionUser ? setModal(true) : setAuthOpen(true)}><b>＋</b>{t.request}</button>
           </section>
 
           <div className="smart-search">
@@ -161,9 +185,10 @@ export default function Home() {
           <label>{lang === "en" ? "What needs to be done?" : "¿Qué necesitas hacer?"}<input placeholder={lang === "en" ? "Example: assemble a desk" : "Ejemplo: montar un escritorio"} /></label>
           <label>{lang === "en" ? "When?" : "¿Cuándo?"}<div className="modal-options"><button>Today</button><button>Tomorrow</button><button>Choose date</button></div></label>
           <label>{t.budget}<input placeholder="$100" /></label>
-          <button className="modal-submit" onClick={() => setModal(false)}>{lang === "en" ? "Continue" : "Continuar"} →</button>
+          <button className="modal-submit" onClick={async () => { if (!supabase || !sessionUser) { setAuthOpen(true); return; } const title = (document.querySelector(".job-modal label input") as HTMLInputElement)?.value?.trim(); if (!title) return; const { error } = await supabase.from("jobs").insert({ customer_id: sessionUser.id, title, description: title, status: "open" }); if (!error) { setModal(false); const { data } = await supabase.from("jobs").select("*").eq("status","open").order("created_at",{ascending:false}).limit(20); if (data) setRealJobs(data); } }}>{lang === "en" ? "Publish job" : "Publicar trabajo"} →</button>
         </div>
       </div>}
+      {authOpen && <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setAuthOpen(false); }}><div className="job-modal"><button className="modal-close" onClick={() => setAuthOpen(false)}>×</button><span className="modal-kicker">JOBZAPP</span><h2>{authMode === "signin" ? (lang === "en" ? "Welcome back" : "Bienvenido") : (lang === "en" ? "Create your account" : "Crea tu cuenta")}</h2><p>{supabase ? (lang === "en" ? "Your account connects you to real Jobzapp jobs." : "Tu cuenta te conecta con trabajos reales de Jobzapp.") : "Supabase is not configured in this build yet."}</p>{authMode === "signup" && <label>{lang === "en" ? "Name" : "Nombre"}<input value={authName} onChange={e=>setAuthName(e.target.value)} /></label>}<label>Email<input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} /></label><label>Password<input type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} /></label>{authMessage && <p>{authMessage}</p>}<button className="modal-submit" onClick={async()=>{ if(!supabase){setAuthMessage("Connect Supabase environment variables first.");return;} const result=authMode==="signin"?await supabase.auth.signInWithPassword({email:authEmail,password:authPassword}):await supabase.auth.signUp({email:authEmail,password:authPassword,options:{data:{full_name:authName}}}); if(result.error)setAuthMessage(result.error.message); else {setAuthMessage(authMode==="signup"?"Check your email to confirm your account.":"Signed in."); if(authMode==="signin")setAuthOpen(false);}}}>{authMode==="signin"?(lang==="en"?"Sign in":"Entrar"):(lang==="en"?"Create account":"Crear cuenta")}</button><button className="text-button" onClick={()=>setAuthMode(authMode==="signin"?"signup":"signin")}>{authMode==="signin"?(lang==="en"?"Need an account? Sign up":"¿No tienes cuenta? Regístrate"):(lang==="en"?"Already have an account? Sign in":"¿Ya tienes cuenta? Entra")}</button></div></div>}
     </main>
   );
 }
