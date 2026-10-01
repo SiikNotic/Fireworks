@@ -1,158 +1,169 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 type Lang = "en" | "es";
-type Modal = "job" | "account" | null;
+type Mode = "customer" | "pro";
 
-const i18n = {
+const copy = {
   en: {
-    nav: ["How it works", "Find work", "Services"],
-    login: "Log in", start: "Get started", kicker: "A service marketplace built around getting things done",
-    title: "The fastest way to find help.", sub: "Post a job. See real people. Compare offers. Choose who gets it done.",
-    search: "What do you need help with?", find: "Find a pro", rating: "4.9/5 average rating",
-    trust: "12,000+ jobs completed • Secure payments • English & Spanish",
-    live: "LIVE OFFERS", task: "Install a ceiling fan", place: "South Philly • 2 hours", offers: "6 offers",
-    compare: "Compare offers", verified: "VERIFIED", top: "TOP RATED",
-    customerK: "FOR CUSTOMERS", customerTitle: "Need a job done?", customerText: "Describe the task once and let qualified people come to you with clear offers.",
-    professionalK: "FOR PROFESSIONALS", professionalTitle: "Work on your terms.", professionalText: "Browse nearby jobs, send your price, and fill your schedule with work that fits.",
-    week: "THIS WEEK", earnings: "$1,284", jobs: "8 jobs completed • 4.98 rating",
-    catK: "POPULAR CATEGORIES", catTitle: "Start with a service.",
-    cats: [["Home repairs","2.4k pros"],["Cleaning","1.8k pros"],["Moving","940 pros"],["Painting","760 pros"],["Lawn & garden","620 pros"],["Tech help","510 pros"]],
-    handoff: "THE HANDOFF", handoffTitle: "Three moves. No endless back-and-forth.",
-    steps: [["POST","Tell us what needs to happen.","A few details. No complicated forms."],["CHOOSE","Compare people, not promises.","Price, ratings, availability and chat in one place."],["DONE","Get it handled and close it out.","Pay securely, then leave a verified review."]],
-    ctaTitle: "Whatever needs doing. Start here.", ctaText: "A modern marketplace for people who need help and people ready to help.",
-    cta: "Get started", free: "Free to join • English & Spanish",
-    jobModal: "Post a job", accountModal: "Create your account", need: "What do you need?", where: "Where?", budget: "Budget", email: "Email",
-    continue: "Continue", cancel: "Cancel", accountText: "Your job draft is saved. Real authentication and marketplace data connect here when the backend is enabled.",
-    proNote: "For professionals: create a profile, send offers and build verified reviews."
+    hello: "Good afternoon", title: "What can we get done?", search: "What do you need help with?",
+    near: "Philadelphia, PA", categories: ["Home","Cleaning","Moving","Tech","Painting","Yard"],
+    nearby: "Nearby right now", popular: "Popular near you", jobs: "Jobs you might like",
+    all: "See all", request: "Post a job", active: "Your request is active",
+    viewing: "2 professionals are viewing it", home: "Home", discover: "Discover", post: "Post",
+    inbox: "Inbox", activity: "Jobs", mode: "I'm a professional", customer: "I'm hiring",
+    today: "Today", tomorrow: "Tomorrow", away: "away", offer: "offers", verified: "Verified",
+    budget: "Budget", from: "from", details: "View details", language: "EN / ES",
+    job1: "Mount TV + hide cables", job2: "Deep clean 2BR apartment", job3: "Move sofa + boxes",
+    job4: "Fix leaking kitchen faucet", pro1: "David T.", pro2: "Maria R.", pro3: "Kevin B.",
+    find: "Find help", filter: "Filters", cancel: "Cancel", save: "Save"
   },
   es: {
-    nav: ["Cómo funciona", "Buscar trabajo", "Servicios"],
-    login: "Iniciar sesión", start: "Comenzar", kicker: "Un marketplace de servicios creado para resolver",
-    title: "La forma rápida de encontrar ayuda.", sub: "Publica el trabajo. Mira personas reales. Compara ofertas. Elige quién lo hace.",
-    search: "¿Qué necesitas?", find: "Buscar profesional", rating: "4.9/5 de calificación promedio",
-    trust: "12,000+ trabajos • Pagos seguros • Inglés y español",
-    live: "OFERTAS EN VIVO", task: "Instalar un abanico de techo", place: "South Philly • 2 horas", offers: "6 ofertas",
-    compare: "Comparar ofertas", verified: "VERIFICADO", top: "MEJOR VALORADO",
-    customerK: "PARA CLIENTES", customerTitle: "¿Necesitas un trabajo?", customerText: "Describe la tarea una vez y recibe ofertas claras de personas calificadas.",
-    professionalK: "PARA PROFESIONALES", professionalTitle: "Trabaja a tu manera.", professionalText: "Busca trabajos cercanos, envía tu precio y llena tu horario con trabajos que encajen.",
-    week: "ESTA SEMANA", earnings: "$1,284", jobs: "8 trabajos • 4.98 de calificación",
-    catK: "CATEGORÍAS POPULARES", catTitle: "Empieza con un servicio.",
-    cats: [["Reparaciones","2.4k pros"],["Limpieza","1.8k pros"],["Mudanzas","940 pros"],["Pintura","760 pros"],["Jardín","620 pros"],["Ayuda técnica","510 pros"]],
-    handoff: "EL CAMBIO DE MANOS", handoffTitle: "Tres pasos. Sin conversaciones eternas.",
-    steps: [["PUBLICA","Dinos qué tiene que pasar.","Unos detalles. Sin formularios complicados."],["ELIGE","Compara personas, no promesas.","Precio, calificaciones, disponibilidad y chat en un solo lugar."],["LISTO","Hazlo y ciérralo.","Paga seguro y deja una reseña verificada."]],
-    ctaTitle: "Lo que necesites. Empieza aquí.", ctaText: "Un marketplace moderno para quienes necesitan ayuda y quienes están listos para ayudar.",
-    cta: "Comenzar", free: "Gratis • Inglés y español",
-    jobModal: "Publicar trabajo", accountModal: "Crear tu cuenta", need: "¿Qué necesitas?", where: "¿Dónde?", budget: "Presupuesto", email: "Correo",
-    continue: "Continuar", cancel: "Cancelar", accountText: "Tu borrador quedó guardado. La autenticación y los datos reales del marketplace se conectarán aquí al activar el backend.",
-    proNote: "Para profesionales: crea tu perfil, envía ofertas y construye reseñas verificadas."
+    hello: "Buenas tardes", title: "¿Qué resolvemos hoy?", search: "¿Qué necesitas?",
+    near: "Filadelfia, PA", categories: ["Hogar","Limpieza","Mudanza","Tech","Pintura","Jardín"],
+    nearby: "Cerca de ti ahora", popular: "Popular cerca de ti", jobs: "Trabajos para ti",
+    all: "Ver todos", request: "Publicar trabajo", active: "Tu solicitud está activa",
+    viewing: "2 profesionales la están viendo", home: "Inicio", discover: "Descubrir", post: "Publicar",
+    inbox: "Mensajes", activity: "Trabajos", mode: "Soy profesional", customer: "Estoy contratando",
+    today: "Hoy", tomorrow: "Mañana", away: "de distancia", offer: "ofertas", verified: "Verificado",
+    budget: "Presupuesto", from: "desde", details: "Ver detalles", language: "ES / EN",
+    find: "Buscar ayuda", filter: "Filtros", cancel: "Cancelar", save: "Guardar"
   }
 } as const;
 
-const icons = ["⌂","✦","↗","◈","✳","⌘"];
+const jobs = [
+  { title: "Mount TV + hide cables", es: "Montar TV + ocultar cables", price: "$90–$150", distance: "0.8 mi", time: "Today", icon: "⌂", color: "blue" },
+  { title: "Deep clean 2BR apartment", es: "Limpieza profunda 2 habitaciones", price: "$120", distance: "1.2 mi", time: "Tomorrow", icon: "✦", color: "mint" },
+  { title: "Move sofa + boxes", es: "Mover sofá + cajas", price: "$75–$110", distance: "2.1 mi", time: "Sat", icon: "↗", color: "violet" },
+  { title: "Fix leaking kitchen faucet", es: "Reparar llave de cocina", price: "$65–$95", distance: "1.6 mi", time: "Today", icon: "⚒", color: "orange" }
+];
 
 export default function Home() {
-  const [lang,setLang]=useState<Lang>("en");
-  const [menu,setMenu]=useState(false);
-  const [modal,setModal]=useState<Modal>(null);
-  const t=i18n[lang];
+  const [lang, setLang] = useState<Lang>("en");
+  const [mode, setMode] = useState<Mode>("customer");
+  const [tab, setTab] = useState("home");
+  const [category, setCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [modal, setModal] = useState(false);
+  const t = copy[lang];
 
-  useEffect(()=>{document.documentElement.lang=lang},[lang]);
+  const filtered = useMemo(() => jobs.filter(j => {
+    const text = lang === "en" ? j.title : j.es;
+    return !query || text.toLowerCase().includes(query.toLowerCase());
+  }), [query, lang]);
 
-  function submitJob(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();
-    const data=Object.fromEntries(new FormData(e.currentTarget).entries());
-    localStorage.setItem("jobzapp-draft-job",JSON.stringify(data));
-    setModal("account");
-  }
-
-  return <main className="site">
-    <header className="topbar">
-      <a className="logo" href="#top">jobzapp</a>
-      <nav className={menu?"nav open":"nav"}>{t.nav.map((x,i)=><a key={x} href={["#how","#work","#services"][i]} onClick={()=>setMenu(false)}>{x}</a>)}</nav>
-      <div className="top-actions">
-        <button className="lang" onClick={()=>setLang(lang==="en"?"es":"en")}>{lang==="en"?"EN / ES":"ES / EN"}</button>
-        <button className="login" onClick={()=>setModal("account")}>{t.login}</button>
-        <button className="mini-cta" onClick={()=>setModal("account")}>{t.start} ↗</button>
-        <button className="hamburger" onClick={()=>setMenu(!menu)} aria-label="Menu"><i/><i/><i/></button>
-      </div>
-    </header>
-
-    <section className="hero-v3" id="top">
-      <div className="noise"/><div className="hero-grid"/>
-      <div className="hero-left reveal">
-        <div className="eyebrow"><span className="live-dot"/>{t.kicker}</div>
-        <h1>{t.title}</h1>
-        <p className="hero-sub">{t.sub}</p>
-        <div className="searchbar">
-          <span className="search-symbol">⌕</span>
-          <span className="search-placeholder">{t.search}</span>
-          <button onClick={()=>setModal("job")}>{t.find} <b>→</b></button>
+  return (
+    <main className="app-shell">
+      <aside className="desktop-sidebar">
+        <div className="brand">jobzapp<span>.</span></div>
+        <div className="mode-switch">
+          <button className={mode === "customer" ? "selected" : ""} onClick={() => setMode("customer")}>{t.customer}</button>
+          <button className={mode === "pro" ? "selected" : ""} onClick={() => setMode("pro")}>{t.mode}</button>
         </div>
-        <div className="trust-line"><span>{t.rating}</span><em>•</em><span>{t.trust}</span></div>
-      </div>
-
-      <div className="hero-product reveal">
-        <div className="product-halo"/>
-        <div className="product-window">
-          <div className="window-bar"><span>JOBZAPP / MARKETPLACE</span><div><i/><i/><i/></div></div>
-          <div className="product-heading">
-            <div><span className="live-label">● {t.live}</span><h2>{t.task}</h2><p>{t.place}</p></div>
-            <strong>$140</strong>
-          </div>
-          <div className="offer-row">
-            <div className="avatar avatar-a">DT</div><div className="offer-info"><b>David T.</b><span>4.9 ★ • 86 jobs • 12 min away</span></div><span className="price">$125</span>
-            <small>{t.verified}</small>
-          </div>
-          <div className="offer-row">
-            <div className="avatar avatar-b">KB</div><div className="offer-info"><b>Kevin B.</b><span>5.0 ★ • 124 jobs • 18 min away</span></div><span className="price">$140</span>
-            <small className="purple">{t.top}</small>
-          </div>
-          <button className="compare" onClick={()=>setModal("account")}>{t.compare} <span>→</span></button>
-          <p className="secure">Payment held securely until the job is complete.</p>
+        <nav>
+          {[[t.home,"⌂","home"],[t.discover,"⌕","discover"],[t.post,"＋","post"],[t.inbox,"▣","inbox"],[t.activity,"◉","jobs"]].map(([label,icon,key]) =>
+            <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key as string)}><i>{icon}</i><span>{label}</span></button>
+          )}
+        </nav>
+        <div className="sidebar-bottom">
+          <button onClick={() => setLang(lang === "en" ? "es" : "en")}>◎ {t.language}</button>
+          <button>⚙ Settings</button>
+          <div className="profile-mini"><div>SN</div><span><b>Siik</b><small>Personal account</small></span><strong>•••</strong></div>
         </div>
-        <div className="live-toast"><span>✓</span><div><b>New offer received</b><small>Maria sent a $110 offer</small></div><strong>$110</strong></div>
-      </div>
-    </section>
+      </aside>
 
-    <div className="marquee"><div>{[...t.cats.map(c=>c[0]),"Secure payments","Verified people","In-app chat","EN / ES","No hidden fees"].concat([...t.cats.map(c=>c[0])]).map((x,i)=><span key={i}>✦ {x}</span>)}</div></div>
+      <section className="app-content">
+        <header className="app-header">
+          <div className="mobile-brand">jobzapp<span>.</span></div>
+          <div className="location"><span>⌖</span><div><small>Location</small><b>{t.near}</b></div><strong>⌄</strong></div>
+          <div className="header-actions">
+            <button className="language" onClick={() => setLang(lang === "en" ? "es" : "en")}>{t.language}</button>
+            <button className="bell">♢<i>2</i></button>
+            <button className="avatar">SN</button>
+          </div>
+        </header>
 
-    <section className="duo-section shell" id="work">
-      <div className="section-intro reveal"><span>{t.kicker}</span><h2>Built for the moment<br/>you actually need it.</h2><p>{t.customerText}</p></div>
-      <div className="duo-grid">
-        <article className="side-card customer reveal">
-          <div className="card-kicker">{t.customerK}</div><h3>{t.customerTitle}</h3><p>{t.customerText}</p>
-          <div className="task-preview"><span className="open-tag">OPEN</span><b>Mount TV + hide cables</b><small>University City • This week</small><strong>$90–$150</strong></div>
-        </article>
-        <article className="side-card professional reveal">
-          <div className="card-kicker">{t.professionalK}</div><h3>{t.professionalTitle}</h3><p>{t.professionalText}</p>
-          <div className="earnings"><span>{t.week}</span><b>{t.earnings}</b><small>{t.jobs}</small><strong>↗</strong></div>
-        </article>
-      </div>
-    </section>
+        <div className="main-scroll">
+          <section className="welcome">
+            <div><span>{t.hello}</span><h1>{mode === "customer" ? t.title : (lang === "en" ? "What work fits your day?" : "¿Qué trabajo encaja hoy?")}</h1></div>
+            <button className="quick-post" onClick={() => setModal(true)}><b>＋</b>{t.request}</button>
+          </section>
 
-    <section className="services shell" id="services">
-      <div className="services-head reveal"><div><span>{t.catK}</span><h2>{t.catTitle}</h2></div><button onClick={()=>setModal("job")}>View all →</button></div>
-      <div className="service-grid">{t.cats.map((c,i)=><button className="service-card reveal" key={c[0]} onClick={()=>setModal("job")}><span className="service-icon">{icons[i]}</span><div><b>{c[0]}</b><small>{c[1]}</small></div><strong>→</strong></button>)}</div>
-    </section>
+          <div className="smart-search">
+            <span>⌕</span>
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.search} />
+            <button onClick={() => setQuery("")}>⌘ K</button>
+          </div>
 
-    <section className="handoff" id="how">
-      <div className="shell handoff-inner">
-        <div className="reveal"><span className="violet-kicker">{t.handoff}</span><h2>{t.handoffTitle}</h2></div>
-        <div className="step-list">{t.steps.map((s,i)=><article className="step reveal" key={s[0]}><span className="step-no">0{i+1}</span><div><b>{s[0]}</b><h3>{s[1]}</h3><p>{s[2]}</p></div></article>)}</div>
-      </div>
-    </section>
+          <section className="category-row">
+            {["All", ...t.categories].map((c, i) =>
+              <button key={c} className={(category === c || (category === "All" && i === 0)) ? "cat active" : "cat"} onClick={() => setCategory(c)}>
+                <span>{["✦","⌂","✧","↗","⌘","◇","✳"][i]}</span>{c}
+              </button>
+            )}
+          </section>
 
-    <section className="final-cta shell reveal">
-      <div className="cta-orb"/><span>JOBZAPP</span><h2>{t.ctaTitle}</h2><p>{t.ctaText}</p><button onClick={()=>setModal("job")}>{t.cta} <b>→</b></button><small>{t.free}</small>
-    </section>
+          <section className="dashboard-grid">
+            <div className="map-panel">
+              <div className="panel-head"><div><span className="eyebrow">{t.nearby}</span><h2>{t.popular}</h2></div><button>{t.filter} ≡</button></div>
+              <div className="fake-map">
+                <div className="map-lines one"/><div className="map-lines two"/><div className="map-lines three"/>
+                <div className="map-road r1"/><div className="map-road r2"/><div className="map-road r3"/>
+                {[["18%","27%","$85"],["51%","20%","$120"],["72%","42%","$65"],["36%","67%","$95"],["78%","72%","$140"]].map((p,i) =>
+                  <button className={i===2 ? "map-pin hot" : "map-pin"} style={{left:p[0],top:p[1]}} key={i}><span>✦</span>{p[2]}</button>
+                )}
+                <div className="you-pin"><span>SN</span><b>YOU</b></div>
+                <div className="map-controls"><button>＋</button><button>−</button></div>
+                <div className="map-card"><span>LIVE</span><b>18 open jobs</b><small>within 3 miles</small></div>
+              </div>
+            </div>
 
-    <footer className="footer shell"><a className="logo" href="#top">jobzapp</a><span>© 2026 Jobzapp</span><div><button onClick={()=>setModal("account")}>Privacy</button><button onClick={()=>setModal("account")}>Terms</button><button onClick={()=>setModal("account")}>Help</button></div></footer>
+            <div className="jobs-panel">
+              <div className="panel-head"><div><span className="eyebrow">{t.jobs}</span><h2>{filtered.length} matches</h2></div><button>{t.all} →</button></div>
+              <div className="job-list">
+                {filtered.slice(0,4).map((j,i) =>
+                  <button className="job-card" key={j.title} onClick={() => setModal(true)}>
+                    <div className={"job-icon " + j.color}>{j.icon}</div>
+                    <div className="job-copy"><b>{lang === "en" ? j.title : j.es}</b><span>{j.distance} {t.away} • <em>{j.time === "Today" ? t.today : j.time === "Tomorrow" ? t.tomorrow : j.time}</em></span><small><strong>{t.budget}</strong> {j.price}</small></div>
+                    <strong className="arrow">›</strong>
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
 
-    {modal&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(null)}}><div className="modal">
-      <button className="close" onClick={()=>setModal(null)}>×</button><span>JOBZAPP</span>
-      {modal==="job"?<><h2>{t.jobModal}</h2><form onSubmit={submitJob}><label>{t.need}<input name="title" required placeholder={lang==="en"?"Fix a leaking faucet":"Reparar una llave"}/></label><label>{t.where}<input name="location" required placeholder={lang==="en"?"City or ZIP":"Ciudad o código postal"}/></label><label>{t.budget}<input name="budget" placeholder="$100"/></label><button>{t.continue} →</button></form><button className="cancel" onClick={()=>setModal(null)}>{t.cancel}</button></>:<><h2>{t.accountModal}</h2><p>{t.accountText}</p><p>{t.proNote}</p><label>{t.email}<input type="email" placeholder="you@example.com"/></label><button onClick={()=>setModal(null)}>{t.continue} →</button></>}
-    </div></div>}
-  </main>;
+          <section className="active-request">
+            <div className="active-icon">✓</div>
+            <div><span>{t.active}</span><b>{t.viewing}</b></div>
+            <div className="progress"><i/><i/><i/></div>
+            <button onClick={() => setTab("jobs")}>{t.details} →</button>
+          </section>
+
+          <section className="trust-strip">
+            <div><b>4.9</b><span>★ average rating</span></div><div><b>12k+</b><span>jobs completed</span></div><div><b>98%</b><span>show-up rate</span></div><div><b>24/7</b><span>support</span></div>
+          </section>
+        </div>
+
+        <nav className="mobile-nav">
+          {[[t.home,"⌂","home"],[t.discover,"⌕","discover"],[t.post,"＋","post"],[t.inbox,"▣","inbox"],[t.activity,"◉","jobs"]].map(([label,icon,key],i) =>
+            <button key={key} className={tab === key ? "active" : ""} onClick={() => key === "post" ? setModal(true) : setTab(key as string)}><i>{icon}</i><span>{label}</span></button>
+          )}
+        </nav>
+      </section>
+
+      {modal && <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setModal(false); }}>
+        <div className="job-modal">
+          <button className="modal-close" onClick={() => setModal(false)}>×</button>
+          <span className="modal-kicker">JOBZAPP</span>
+          <h2>{t.request}</h2>
+          <p>{lang === "en" ? "Tell nearby professionals what you need. You can compare offers before choosing." : "Dile a los profesionales cercanos qué necesitas. Puedes comparar ofertas antes de elegir."}</p>
+          <label>{lang === "en" ? "What needs to be done?" : "¿Qué necesitas hacer?"}<input placeholder={lang === "en" ? "Example: assemble a desk" : "Ejemplo: montar un escritorio"} /></label>
+          <label>{lang === "en" ? "When?" : "¿Cuándo?"}<div className="modal-options"><button>Today</button><button>Tomorrow</button><button>Choose date</button></div></label>
+          <label>{t.budget}<input placeholder="$100" /></label>
+          <button className="modal-submit" onClick={() => setModal(false)}>{lang === "en" ? "Continue" : "Continuar"} →</button>
+        </div>
+      </div>}
+    </main>
+  );
 }
