@@ -10,5 +10,10 @@ export type Database = {
       reviews:{Row:{id:string;job_id:string;reviewer_id:string;reviewee_id:string;rating:number;comment:string;created_at:string};Insert:Omit<Database["public"]["Tables"]["reviews"]["Row"],"id"|"created_at"> & {id?:string;created_at?:string};Update:Partial<Database["public"]["Tables"]["reviews"]["Insert"]>};
       notifications:{Row:{id:string;user_id:string;title:string;body:string;kind:string;read_at:string|null;created_at:string};Insert:Omit<Database["public"]["Tables"]["notifications"]["Row"],"id"|"created_at"> & {id?:string;created_at?:string};Update:Partial<Database["public"]["Tables"]["notifications"]["Insert"]>};
     };
+    Functions: {
+      submit_offer: { Args:{p_job_id:string;p_amount:number;p_message?:string}; Returns:string };
+      accept_offer: { Args:{p_offer_id:string}; Returns:string };
+      update_job_status: { Args:{p_job_id:string;p_status:"open"|"hired"|"in_progress"|"completed"|"cancelled"}; Returns:"open"|"hired"|"in_progress"|"completed"|"cancelled" };
+    };
   };
 };
